@@ -32,6 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define UART_TX_TIMEOUT 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,9 +46,10 @@ UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-HAL_StatusTypeDef uart_status ;
-uint8_t     tx[5]       = { 1 , 2 , 3 , 4 , 5 } ;
-uint8_t     rx[5];
+char                hello[]         = "HELLO\n" ;
+HAL_StatusTypeDef   uart_status ;
+uint8_t             tx_buff[5]       = { 1 , 2 , 3 , 4 , 5 } ;
+uint8_t             rx_buff[5];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,15 +99,16 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA ( &huart1 , rx , sizeof ( rx ) ) ;
-  //HAL_UART_Receive_DMA ( &huart1 , rx , sizeof ( rx ) ) ;
+  uart_status = HAL_UART_Transmit ( &huart1 , (const uint8_t *) hello , strlen ( hello ) , UART_TX_TIMEOUT ) ;
+  uart_status = HAL_UART_Transmit ( &huart2 , (const uint8_t *) hello , strlen ( hello ) , UART_TX_TIMEOUT ) ;
+  HAL_UARTEx_ReceiveToIdle_DMA ( &huart1 , rx_buff , sizeof ( rx_buff ) ) ;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+    HAL_Delay ( 1000 ) ;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -267,9 +270,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_UART_RxCpltCallback ( UART_HandleTypeDef *huart )
+void HAL_UARTEx_RxEventCallback ( UART_HandleTypeDef *huart , uint16_t Size )
 {
-    __NOP () ;
+    if ( huart->Instance == USART1 ) ;
+    if ( rx_buff[0] != 0 )
+    {
+        strcpy ( (char*)tx_buff , (char*)rx_buff ) ;
+        rx_buff[0] = 0 ;
+    }
+    uart_status = HAL_UART_Transmit ( &huart1 , (const uint8_t *) tx_buff ,  strlen ( (char*) tx_buff ) , UART_TX_TIMEOUT ) ;
+
+    HAL_UARTEx_ReceiveToIdle_DMA ( &huart1 , rx_buff , sizeof ( rx_buff ) ) ;
 }
 /* USER CODE END 4 */
 
