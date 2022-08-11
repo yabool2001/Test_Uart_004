@@ -33,6 +33,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define UART_TX_TIMEOUT 100
+#define RX_BUFF_SIZE 5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,8 +49,8 @@ DMA_HandleTypeDef hdma_usart1_rx;
 /* USER CODE BEGIN PV */
 char                hello[]         = "HELLO\n" ;
 HAL_StatusTypeDef   uart_status ;
-uint8_t             tx_buff[5]       = { 1 , 2 , 3 , 4 , 5 } ;
-uint8_t             rx_buff[5];
+uint8_t             tx_buff[RX_BUFF_SIZE]       = { 1 , 2 , 3 , 4 , 5 } ;
+uint8_t             rx_buff[RX_BUFF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,7 +60,7 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void cpy_cln_buff ( uint8_t* , uint8_t* ) ;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -275,12 +276,34 @@ void HAL_UARTEx_RxEventCallback ( UART_HandleTypeDef *huart , uint16_t Size )
     if ( huart->Instance == USART1 ) ;
     if ( rx_buff[0] != 0 )
     {
-        strcpy ( (char*)tx_buff , (char*)rx_buff ) ;
+        cpy_cln_buff ( rx_buff , tx_buff ) ;
         rx_buff[0] = 0 ;
     }
     uart_status = HAL_UART_Transmit ( &huart1 , (const uint8_t *) tx_buff ,  strlen ( (char*) tx_buff ) , UART_TX_TIMEOUT ) ;
 
     HAL_UARTEx_ReceiveToIdle_DMA ( &huart1 , rx_buff , sizeof ( rx_buff ) ) ;
+}
+void cpy_cln_buff ( uint8_t* s , uint8_t* d )
+{
+    uint8_t i = 0 ;
+    if ( sizeof ( s ) == sizeof ( d ) )
+    {
+        for ( i = 0 ; i < RX_BUFF_SIZE ; i++ )
+        {
+            switch ( i )
+            {
+                case ( RX_BUFF_SIZE - 2 ) :
+                    d[i] = 0x0A ;
+                    break;
+                case ( RX_BUFF_SIZE - 1 ) :
+                    d[i] = 0 ;
+                    break;
+                default :
+                    d[i] = s[i] ;
+            }
+            s[i] = 0 ;
+        }
+    }
 }
 /* USER CODE END 4 */
 
