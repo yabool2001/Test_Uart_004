@@ -33,7 +33,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define UART_TX_TIMEOUT 100
-#define RX_BUFF_SIZE 5
+#define RX_BUFF_SIZE 50
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,7 +60,7 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static void cpy_cln_buff ( uint8_t* , uint8_t* ) ;
+static void cpy_buff ( uint8_t* , uint8_t* ) ;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -97,8 +97,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART2_UART_Init();
-  MX_USART1_UART_Init();
+  MX_USART2_UART_Init(); //COM4 on MW50-SV0
+  MX_USART1_UART_Init(); //COM10 on MW50-SV0
   /* USER CODE BEGIN 2 */
   uart_status = HAL_UART_Transmit ( &huart1 , (const uint8_t *) hello , strlen ( hello ) , UART_TX_TIMEOUT ) ;
   uart_status = HAL_UART_Transmit ( &huart2 , (const uint8_t *) hello , strlen ( hello ) , UART_TX_TIMEOUT ) ;
@@ -109,7 +109,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_Delay ( 1000 ) ;
+    //HAL_Delay ( 1000 ) ;
+	  __NOP () ;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -276,14 +277,14 @@ void HAL_UARTEx_RxEventCallback ( UART_HandleTypeDef *huart , uint16_t Size )
     if ( huart->Instance == USART1 ) ;
     if ( rx_buff[0] != 0 )
     {
-        cpy_cln_buff ( rx_buff , tx_buff ) ;
+        cpy_buff ( rx_buff , tx_buff ) ;
         rx_buff[0] = 0 ;
+        uart_status = HAL_UART_Transmit ( &huart2 , (const uint8_t *) tx_buff ,  strlen ( (char*) tx_buff ) , UART_TX_TIMEOUT ) ;
     }
-    uart_status = HAL_UART_Transmit ( &huart1 , (const uint8_t *) tx_buff ,  strlen ( (char*) tx_buff ) , UART_TX_TIMEOUT ) ;
 
     HAL_UARTEx_ReceiveToIdle_DMA ( &huart1 , rx_buff , sizeof ( rx_buff ) ) ;
 }
-void cpy_cln_buff ( uint8_t* s , uint8_t* d )
+void cpy_buff ( uint8_t* s , uint8_t* d )
 {
     uint8_t i = 0 ;
     if ( sizeof ( s ) == sizeof ( d ) )
@@ -301,7 +302,6 @@ void cpy_cln_buff ( uint8_t* s , uint8_t* d )
                 default :
                     d[i] = s[i] ;
             }
-            s[i] = 0 ;
         }
     }
 }
